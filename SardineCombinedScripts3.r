@@ -89,12 +89,12 @@ if(All1 == TRUE || Script1 == TRUE) {
   CRSnumSourceGrid   = 3035        #User input 
   CRSnumPointBuf     = 2154        #User input 
   
-  AnimalofInterest     = "horse"   #User input
+  AnimalofInterest     = "horse"   #User input  (Animal name as in SelectedRegion_shape)
   CommunityIdentifier  = "area"    #Generic
   
   run.big.loop       = TRUE    #If TRUE entire model runs (takes time)
   save.part1.data    = TRUE    #If TRUE, overwrites saved data
-  load.part1.data    = TRUE    #Load existing file?
+  load.part1.data    = FALSE    #Load existing file?
   save.gridinfoCount = TRUE    #gridinfo + count data per grid
   
   
@@ -121,7 +121,7 @@ if(All1 == TRUE || Script1 == TRUE) {
        coordinates_country <- coordinates(gridShapeFile_WGS84)
        grid_country_ID <- sapply(slot(gridShapeFile_WGS84, "polygons"), function(x) slot(x, "ID")) 
   
-     SelectedRegion_shape <- shapeFile_WGS84
+     SelectedRegion_shape <- shapeFile_WGS84       
      names(SelectedRegion_shape)[1] <- "DISTRICT"                                 
   
      #Sets row num to 0 and Slot ID = 0
@@ -133,13 +133,15 @@ if(All1 == TRUE || Script1 == TRUE) {
   
       #The plot is required to add the circles created in the next part
       plot(SelectedRegionSpP.frame, pbg="white")
+      #Data in Sp
+          tmpBasicData <- as.data.frame(SelectedRegion_shape@data)
+          write.csv(tmpBasicData, "Output/tmpBasicData.csv")
   
   #############################################################################
   # FUNCTIONS
   #############################################################################
   my.pointinfo <- function(my.circle.x,my.circle.y,my.radius.lambert){
-  
-    #These points of interest are gridded data containing e.g. number of horses  
+    #These points of interest are gridded data containing e.g. number of animals  
     point.of.interest <- SpatialPoints(data.frame(x = my.circle.x, y = my.circle.y))
       proj4string(point.of.interest)=CRS(paste("+init=epsg:",CRSnum,sep=""))
   
@@ -153,6 +155,9 @@ if(All1 == TRUE || Script1 == TRUE) {
      communes[which(!is.na(communes))]
   
     #select the data associated with each cirle
+    #look at sp data as a check:
+       tmp1 <- read.csv("Output/tmpBasicData.csv")
+       tmp1[(which(communes==1)),]
     animals.in.neighbors.communes<-SelectedRegion_shape[,AnimalofInterest][[1]][(which(communes==1))] 
        totalanimals <- sum(animals.in.neighbors.communes,na.rm=TRUE)
        plot(gBoundary(my.buf.reprojected),add=TRUE, col=2)
@@ -164,7 +169,7 @@ if(All1 == TRUE || Script1 == TRUE) {
        #area of each communes neighbor  
     area.of.neighbors.communes<-sapply(slot(shapeFile, "polygons"),
                                      function(x) slot(x, "area"))[(which(communes==1))]
-       #commune polygon in point of interest
+       #is spatial point in spatial polygon?
        in.commune <-over(SelectedRegionSpP.frame,point.of.interest)
        in.commune.CommunityIdentifier <- SelectedRegion_shape[,"DISTRICT"][[1]][which(in.commune==1)]
     
@@ -179,7 +184,8 @@ if(All1 == TRUE || Script1 == TRUE) {
     
     return(mylist)
   }#end function
-    
+
+  #This sets-up basic data oject  
   #Could be another grid type, now just VICEgrid
   if (gridtype =="VICEgrid"){
     my.gridindex    <- as.numeric(grid_country_ID)
@@ -225,21 +231,23 @@ if(All1 == TRUE || Script1 == TRUE) {
   
   for(j in 1:length(projects)){
     
-    project <- projects[[j]]
+    project  <- projects[[j]]
     raw.data <- projectsCountData[[j]]
 
     x.try3  <- read.table(raw.data,sep=";",header=TRUE,allowEscapes = TRUE, fill = TRUE,)
         if('try-error' %in% class(x.try3))
             {print(paste("Can't open ", raw.data))} else {           
-              count.data.points <- read.table(raw.data,sep=";",header=TRUE,allowEscapes = TRUE, fill = TRUE,)}
+              count.data.points <- read.table(raw.data,sep=";",header=TRUE,allowEscapes = TRUE,
+                                              fill = TRUE,)}
     
+    #N_Community should be Community in original data set
     commune.level.counts <- as.data.frame(cbind(as.character(count.data.points$date_decl),
                                                 as.numeric(as.character(count.data.points$N_Community))))
       
     names(commune.level.counts)<-c("date","area1")
   
     ##################################################
-    ############ prepare count- vecors for grid points.
+    ############ prepare count- vectors for grid points.
     ##################################################
     totcounts.test <- 0; maxtest <- 0
     for(i in 1:length(my.gridinfo)){
@@ -248,7 +256,8 @@ if(All1 == TRUE || Script1 == TRUE) {
       
       if(!length(my.neighbors.in.area)==0){
           varname1 <- paste("base", project, "Counts", sep="")  
-          temp1 <- as.character(commune.level.counts$date[which(!is.na(match(commune.level.counts$area1, my.neighbors.in.area)))])
+          temp1 <- as.character(commune.level.counts$date[which(!is.na(match(commune.level.counts$area1,
+                                                                             my.neighbors.in.area)))])
           my.gridinfo[[i]][[varname1]] <- temp1
           totcounts.test <- totcounts.test + length(my.gridinfo[[i]][[varname1]])
           if(length(my.gridinfo[[i]][[varname1]])>maxtest){
