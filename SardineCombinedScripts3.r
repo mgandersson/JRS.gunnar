@@ -342,7 +342,8 @@ if(All1 == TRUE || Script2 == TRUE) {
   
     #Time series data
     timeLine <- read.table(timeData,sep=";",header=TRUE,allowEscapes = TRUE, fill = TRUE,)  
-    outbreak.raw$absweek <- outbreak.raw$week_year_num + (timeLine$week_abs[which(timeLine$Date==paste(outbreak.year,"-01-01",sep=""))]-1)
+    outbreak.raw$absweek <- outbreak.raw$week_year_num +
+        (timeLine$week_abs[which(timeLine$Date==paste(outbreak.year,"-01-01",sep=""))]-1)
    
     #####ADDED jpp Aug 13th ########## Need to add DATE in good form to outbreak.raw
        #Get right year
@@ -397,10 +398,10 @@ if(All1 == TRUE || Script3 == TRUE) {
     if(All1 == TRUE)  print("Running all four scripts, in Script 3") else print("Running ONLY script three")  
   
   #Load functions
-  x.try5 <- try(source("Functions/surveillanceFunctions.r"))
+  x.try5 <- try(source(paste("Functions/", shapeFileLayer, "surveillanceFunctions.r", sep="")))
       if('try-error' %in% class(x.try5))
-             {print(paste("Can't open: Functions/surveillanceFunctions.r, sep="))} else {
-               source("Functions/surveillanceFunctions.r")}
+             {print(paste("Can't open:",  "Functions/", shapeFileLayer, "surveillanceFunctions.r", sep=""))} else {
+               source(paste("Functions/", shapeFileLayer, "surveillanceFunctions.r", sep=""))}
     
   #These are pointers to data files
   timeData <-"Data/RefTimelineVice/ref_timeline_VICE.csv"
@@ -420,8 +421,7 @@ if(All1 == TRUE || Script3 == TRUE) {
 
   #If vStuff TRUE, save it for next script  
   vStuff        <-  TRUE  
-  
-  #These are user choices LARGE (vs small) geographic areas
+ 
   outbreak.IDs  <- namesArea
   
   #Choice for calculating the value of evidence
@@ -459,7 +459,8 @@ if(All1 == TRUE || Script3 == TRUE) {
   #############################################################
   ######### start program #####################################
   #############################################################
-  
+
+  #This is terrible form:  
   #Set up for next section
   for(i in 1:length(projects)){
      name1 <- paste("all.counts.", projects[[i]],sep="") 
@@ -486,7 +487,7 @@ if(All1 == TRUE || Script3 == TRUE) {
   ##### Multiple loops
   #Loop over grids  
   for(i in 1:length(my.gridinfo)){
-    #Short loop over projects  
+    #Short loop over projects to create names and initialize  
     for(j in 1:length(projects)){
         name1 <- paste("all.counts.", projects, sep="")
       delayedAssign(name1[[j]], NA)
@@ -496,16 +497,19 @@ if(All1 == TRUE || Script3 == TRUE) {
 
     my.gridinfo[[i]][["out.geom.p"]] <- my.out.params.from.pop(my.gridinfo[[i]][["animals.in.range"]])
 
-    #Short loop over projects
+    #Again, loop over projects
     for(q in 1:length(projects)){
         varName1 <- paste("base", projects[[q]], "Counts", sep="")    
       if(length(my.gridinfo[[i]][[varName1]])!=0){
+          print(paste("my.gridinfo[[", i,"]][[", varName1, "]])!=0 == TRUE", sep=""))
           outDates1 <- subset(my.gridinfo[[i]][[varName1]], my.gridinfo[[i]][[varName1]] != "0")
           my.return <- make.time.series(outDates1)
           } else{my.return <- make.time.series(c())}
 
       if(length(my.return[[1]]) != 0){ 
-      eval(parse(text=(paste("all.week.time.series.", projects[[q]], "[[", i, "]] <- ", my.return[[1]], sep=""))))}
+          eval(parse(text=(paste("all.week.time.series.", projects[[q]], "[[", i, "]] <- ", my.return[[1]], sep=""))))
+         }
+        
       eval(parse(text=(paste("all.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[2]], sep=""))))
               temp1 <- eval(parse(text=(paste("all.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[2]], sep=""))))
       eval(parse(text=(paste("all.week.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[3]], sep=""))))
@@ -517,46 +521,46 @@ if(All1 == TRUE || Script3 == TRUE) {
       eval(parse(text=(paste("meanweekcounts.", projects[[q]], "[[", i, "]] <- ", max(temp2), sep=""))))          
 
       gridpop[[i]] <- my.gridinfo[[i]]$animals.in.range    
-    }
-  } #End gridinfo Loop p
-    print("Check:  Many things calculated, but only a few used?")
-
+    } #End loop over project    
+  } #End gridinfo
+   
   #Load surveillance data, we know from above that files exists
    firsttwoYears <- list(); histCounts <- list(); all.baseline.counts.X <- list() 
-   for(i in 1:length(projects)){
-      projx <- read.csv(paste("Data/SurveillanceData/SurveillanceData_", projects[[i]],".csv", sep=""), sep=";")
-      all.baseline.counts.X[[i]] <- make.time.series2(projx$date_decl, t.start="1.01.2006",t.end="31.12.2013",level="week")[[3]]
-      tx <- seq(1:length(all.baseline.counts.X[[i]]))
+   for(j in 1:length(projects)){
+      projx <- read.csv(paste("Data/SurveillanceData/SurveillanceData_", projects[[j]],".csv", sep=""), sep=";")
+      all.baseline.counts.X[[j]] <- make.time.series2(projx$date_decl, t.start="1.01.2006",t.end="31.12.2013",level="week")[[3]]
+      tx <- seq(1:length(all.baseline.counts.X[[j]]))
       week.of.year <- timeLine$week_year_num[match(tx,timeLine$week_abs)]
       t.year <- timeLine$year[match(tx,timeLine$week_abs)]
-      firsttwoYears[[i]] <- all.baseline.counts.X[[i]][1:106]  #Needs to be generalized
-      histCounts[[i]]    <- c(firsttwoYears[[i]],all.baseline.counts.X[[i]])
+      firsttwoYears[[j]] <- all.baseline.counts.X[[j]][1:106]  #Needs to be generalized
+      histCounts[[j]]    <- c(firsttwoYears[[j]],all.baseline.counts.X[[j]])
     }
     
   ### prepare model inputs
   histMean.X <- list()  
-  for(i in 1:length(histCounts)){  
+  for(j in 1:length(histCounts)){  
   #histmean is based on the total data and total population
      q1 <- list() 
      for(r in 1:length(tx)){
-      q1[[r]] <- mean(histCounts[[i]][(r+43):(r+96)])  #Needs to be generalized 
+      q1[[r]] <- mean(histCounts[[j]][(r+43):(r+96)])  #Needs to be generalized 
      }
-   histMean.X[[i]] <- q1
+   histMean.X[[j]] <- q1
    }   
     
   loghistMean.X <- list()  
-  for(i in 1:length(histMean.X)){
-     loghistMean.X[[i]] <-log(unlist(histMean.X[[i]]))
+  for(j in 1:length(histMean.X)){
+     loghistMean.X[[j]] <-log(unlist(histMean.X[[j]]))
    }  
   
   #total animal population 
   totpop  <- sum(read.table(animalsPerDistrict, sep=";",header=TRUE,allowEscapes = TRUE, fill = TRUE,)$horse  )   
 
   model.X <- list()  
-  for(i in 1:length(all.baseline.counts.X)){
-      model.X[[i]] <- make.fit(all.baseline.counts.X[[i]], loghistMean.X[[i]], tx, week.of.year, log(totpop),time.unit = "week", distribution="poisson")
+  for(j in 1:length(all.baseline.counts.X)){
+      model.X[[j]] <- make.fit(all.baseline.counts.X[[j]], loghistMean.X[[j]], tx, week.of.year, log(totpop),time.unit = "week", distribution="poisson")
   }
 
+  #set-up only  
   all.grid.counts.X <- list()  
   for(j in 1:length(projects)){
       all.grid.counts <- c()
@@ -593,7 +597,7 @@ if(All1 == TRUE || Script3 == TRUE) {
   ###  NOT SOLVING all.grid.seasonal.X is wrong length
   grid.fit.X <- list(); all.grid.exp.mean.X <- list()  
   for(j in 1:length(projects)){
-      grid.fit.X[[j]]  <- glm(all.grid.counts.X[[j]]  ~ all.grid.logpop +vlog(all.grid.seasonal.X[[j]]), family="poisson")
+      grid.fit.X[[j]]  <- glm(all.grid.counts.X[[j]]  ~ all.grid.logpop +log(all.grid.seasonal.X[[j]]), family="poisson")
       all.grid.exp.mean.X[[j]] <- predict.glm(grid.fit.X[[j]] ,type="response", se.fit=TRUE,newdata=as.data.frame(all.grid.seasonal.X[[j]]))
   }
   
