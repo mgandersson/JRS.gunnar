@@ -1,0 +1,17 @@
+List of questions and responses.
+
+
+The function grid.fit.x is not working, I think because the
+ function make.fit is based on a count of 419, which means
+ model.X <- list()  
+  for(j in 1:length(all.baseline.counts.X)){
+      model.X[[j]] <- make.fit(all.baseline.counts.X[[j]], loghistMean.X[[j]], tx, week.of.year, log(totpop),time.unit = "week", distribution="poisson")
+  }
+
+###  NOT SOLVING all.grid.seasonal.X is wrong length
+  grid.fit.X <- list(); all.grid.exp.mean.X <- list()  
+  for(j in 1:length(projects)){
+      grid.fit.X[[j]]  <- glm(all.grid.counts.X[[j]]  ~ all.grid.logpop +log(all.grid.seasonal.X[[j]]), family="poisson")
+      all.grid.exp.mean.X[[j]] <- predict.glm(grid.fit.X[[j]] ,type="response", se.fit=TRUE,newdata=as.data.frame(all.grid.seasonal.X[[j]]))
+  }
+  
