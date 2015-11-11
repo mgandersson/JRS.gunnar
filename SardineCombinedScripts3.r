@@ -169,6 +169,9 @@ if(All1 == TRUE || Script1 == TRUE) {
        #area of each communes neighbor  
     area.of.neighbors.communes<-sapply(slot(shapeFile, "polygons"),
                                      function(x) slot(x, "area"))[(which(communes==1))]
+    #GunnarNov 11. Here we could instead take values form a table made from a .csv file using the 
+    # sum area from communes in the list "neighbor.communes.CommunityIdentifier"
+    
        #is spatial point in spatial polygon?
        in.commune <-over(SelectedRegionSpP.frame,point.of.interest)
        in.commune.CommunityIdentifier <- SelectedRegion_shape[,"DISTRICT"][[1]][which(in.commune==1)]
@@ -241,6 +244,8 @@ if(All1 == TRUE || Script1 == TRUE) {
                                               fill = TRUE,)}
     
     #N_Community should be Community in original data set
+    #Gunnar Nov 11 - there was a prolem m with headers in the dataset. We should standardize the input..
+    
     commune.level.counts <- as.data.frame(cbind(as.character(count.data.points$date_decl),
                                                 as.numeric(as.character(count.data.points$N_Community))))
       
@@ -509,7 +514,9 @@ if(All1 == TRUE || Script3 == TRUE) {
       if(length(my.return[[1]]) != 0){ 
           eval(parse(text=(paste("all.week.time.series.", projects[[q]], "[[", i, "]] <- ", my.return[[1]], sep=""))))
          }
-        
+       
+      #Gunnar Nov 11 I am not sure exactly what this does. What we really need later is "all week counts". 
+      #my.retyrn[[3]]. (my.return[[2]] would be used IF we wanted amodel using aggreagtion at day level.)
       eval(parse(text=(paste("all.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[2]], sep=""))))
               temp1 <- eval(parse(text=(paste("all.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[2]], sep=""))))
       eval(parse(text=(paste("all.week.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[3]], sep=""))))
@@ -522,8 +529,14 @@ if(All1 == TRUE || Script3 == TRUE) {
 
       gridpop[[i]] <- my.gridinfo[[i]]$animals.in.range    
     } #End loop over project    
-  } #End gridinfo
-   
+  } #End gridinfo 
+  #in earlier verison you named this "loop p"
+  #In previous version you added:
+  #print("Check:  Many things calculated, but only a few used?")
+  #max end mean values were calculated as a log - to see that the "make time series" function performed correctly
+  # in modelling we use "allcounts" or "all.week.counts" depending on whether we model at weekly ar daily level
+  # may be possible to simplify.
+  
   #Load surveillance data, we know from above that files exists
    firsttwoYears <- list(); histCounts <- list(); all.baseline.counts.X <- list() 
    for(j in 1:length(projects)){
@@ -537,6 +550,14 @@ if(All1 == TRUE || Script3 == TRUE) {
     }
     
   ### prepare model inputs
+  # Gunnar Nov 11.one flaw in the current verison is that we do not make a difference between the
+  #training persiod and the test period
+  # we should define somewhere in the beginning what part of the timeline is "training data"
+  #for the data used in the non-spatial modelleing we should make the global variables
+  # e.g. all.baseline.counts, week.of.year etc columns  of a data.frame "non.spatial.data
+  # then this dataframe should be "split" in a "non spatial train data" and "non spatial test data" part
+  # only the train data should be sent to "make fit".
+  
   histMean.X <- list()  
   for(j in 1:length(histCounts)){  
   #histmean is based on the total data and total population
@@ -571,6 +592,17 @@ if(All1 == TRUE || Script3 == TRUE) {
   }
 
   #Why just for Neuro?
+  #Gunnar Nov 11 we just need to get, somehow, the length of the time-series-vector (length of our timeline)
+  # we could obtain this figure from wherever we define the length of the timeline.
+  
+  #Gunnar Nov 11
+  #the data "all.grid ...." should be columns in a data.frame "all.grid.data" 
+  #before unlisting we should ideally first fick the part of each "grid-specific" vector that corresponds to the training period and test persion, as defined earlier.
+  #alterntively we could make a variable "all grid year". then we could use that to divide the 
+  #all.grid data-frame in train and test data.
+  #Storing the "all.grid data as a table in a data-frame is necessary for some modelling-functions
+  #to work (e.g. mle2 that I am trying out now.)
+  
   all.grid.logpop <- c()  
   for(i in 1:length(my.gridinfo)){  
      all.grid.logpop   <-c(all.grid.logpop,rep(log(gridpop[[i]]),length(eval(parse(text=paste("all.week.counts.", projects[[1]],  sep=""))))))
@@ -595,6 +627,9 @@ if(All1 == TRUE || Script3 == TRUE) {
   }
 
   ###  NOT SOLVING all.grid.seasonal.X is wrong length
+  #Gunnar nov 11 it is "all grid counts" that has the wrong length. All vectors should have a length corresponding to
+  #the number of grid-cells times the number of time units.
+  
   grid.fit.X <- list(); all.grid.exp.mean.X <- list()  
   for(j in 1:length(projects)){
       grid.fit.X[[j]]  <- glm(all.grid.counts.X[[j]]  ~ all.grid.logpop +log(all.grid.seasonal.X[[j]]), family="poisson")
