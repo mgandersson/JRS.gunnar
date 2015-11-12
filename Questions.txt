@@ -1,6 +1,12 @@
 List of questions and responses.
 
 
+Should we keep questions and comments in a separate file and
+not in the code itself?  I'm afraid the code will get messy
+and makes merging more difficult. New questions should go on
+top of the current text file?  Do you agree?
+
+
 The function grid.fit.x is not working, I think because the
  function make.fit is based on a count of 419, which means
  model.X <- list()  
