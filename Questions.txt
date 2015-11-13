@@ -1,7 +1,17 @@
 List of questions and responses.
 
 
-Should we keep questions and comments in a separate file and
+Nov 13th.  Maybe good if we go though the code one step at a
+time.  In the section "Read COUNT data", specifically in the
+section "prepare count- vectors for grid points", we match
+communities in compare commune.level and communities in
+neighbors.Communities and pull out the date.  What is the
+significance of date_decl?  I understand that you need the
+base counts of syndromes, but here we're not recording a
+count, but a date.  Where are the base data actually
+recorded?  
+
+Nov 12th. Should we keep questions and comments in a separate file and
 not in the code itself?  I'm afraid the code will get messy
 and makes merging more difficult. New questions should go on
 top of the current text file?  Do you agree?
