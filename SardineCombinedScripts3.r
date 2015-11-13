@@ -1,6 +1,7 @@
+
 ###Ideas
 
-##### There are four scripts,user can chose to run all four or a particular script.  Note that each of the four
+##### There are four scripts,user can chose to run four or a particular script.  Note that each of the four
 ##### scripts produces an .rda output in the associated /Output file.
 
 ####
@@ -13,7 +14,6 @@ Script4 <- FALSE
  ##### Set working directory
   #setwd("/home/jpp/Desktop/Joint Risk Model_2/Model syndr surv/")
   setwd("/home/vnc1/Desktop/Joint Risk Model_2/Model syndr surv/")  #User Input
-
 
 ################################################################################
 ################################################################################
@@ -122,7 +122,7 @@ if(All1 == TRUE || Script1 == TRUE) {
        grid_country_ID <- sapply(slot(gridShapeFile_WGS84, "polygons"), function(x) slot(x, "ID")) 
   
      SelectedRegion_shape <- shapeFile_WGS84       
-     names(SelectedRegion_shape)[1] <- "DISTRICT"                                 
+     names(SelectedRegion_shape)[1] <- "DISTRICT"   #User input                              
   
      #Sets row num to 0 and Slot ID = 0
       empty.data2 <- as.data.frame(cbind(as.character(rep(1,length(SelectedRegion_shape))),
@@ -169,9 +169,6 @@ if(All1 == TRUE || Script1 == TRUE) {
        #area of each communes neighbor  
     area.of.neighbors.communes<-sapply(slot(shapeFile, "polygons"),
                                      function(x) slot(x, "area"))[(which(communes==1))]
-    #GunnarNov 11. Here we could instead take values form a table made from a .csv file using the 
-    # sum area from communes in the list "neighbor.communes.CommunityIdentifier"
-    
        #is spatial point in spatial polygon?
        in.commune <-over(SelectedRegionSpP.frame,point.of.interest)
        in.commune.CommunityIdentifier <- SelectedRegion_shape[,"DISTRICT"][[1]][which(in.commune==1)]
@@ -244,12 +241,10 @@ if(All1 == TRUE || Script1 == TRUE) {
                                               fill = TRUE,)}
     
     #N_Community should be Community in original data set
-    #Gunnar Nov 11 - there was a prolem m with headers in the dataset. We should standardize the input..
-    
     commune.level.counts <- as.data.frame(cbind(as.character(count.data.points$date_decl),
                                                 as.numeric(as.character(count.data.points$N_Community))))
       
-    names(commune.level.counts)<-c("date","area1")
+    names(commune.level.counts)<-c("date","areaX")
   
     ##################################################
     ############ prepare count- vectors for grid points.
@@ -261,19 +256,21 @@ if(All1 == TRUE || Script1 == TRUE) {
       
       if(!length(my.neighbors.in.area)==0){
           varname1 <- paste("base", project, "Counts", sep="")  
-          temp1 <- as.character(commune.level.counts$date[which(!is.na(match(commune.level.counts$area1,
-                                                                             my.neighbors.in.area)))])
+          temp1 <- as.character(commune.level.counts$date[which(!is.na(match(commune.level.counts$areaX,my.neighbors.in.area)))])
+          print(temp1)
           my.gridinfo[[i]][[varname1]] <- temp1
           totcounts.test <- totcounts.test + length(my.gridinfo[[i]][[varname1]])
           if(length(my.gridinfo[[i]][[varname1]])>maxtest){
             maxtest <- length(my.gridinfo[[i]][[varname1]])
           }
       }
+      
     }#end of  for i in length my gridinfo...
-    
-
   }# end for each project
-  
+
+  #Temp remove from final  
+    lapply(my.gridinfo, function(x) cbind(x$within_Community, x$baseRespiratoryCounts))
+    
   if(save.gridinfoCount == TRUE){
      save(my.gridinfo,file = paste("FilenameGridInfoCount", shapeFileLayer,  "_Script1", sep=""))
   }
@@ -290,7 +287,7 @@ if(All1 == TRUE || Script1 == TRUE) {
 ########################################
 
 if(All1 == TRUE || Script2 == TRUE) {
-    if(All1 == TRUE)  print("Running all four scripts, in Script 2") else print("Running ONLY script two")        
+  if(All1 == TRUE)  print("Running all four scripts, in Script 2") else print("Running ONLY script two")        
   
   dataOutbreaks <-  "Data/Outbreaks/"
   
@@ -327,7 +324,7 @@ if(All1 == TRUE || Script2 == TRUE) {
   #Output file, where data from this script is eventually stored   
   outFile   <- paste("Output/",shapeFileLayer, "GridDataCountOutbreaks_Script2.rda", sep="")
   
-  #Time series data
+  #Time series data, ref_timeline_VICE provides absolute dates
   if(file.exists("Data/RefTimelineVice/ref_timeline_VICE.csv") == FALSE) {
                   print(paste("File: Data/RefTimelineVice/ref_timeline_VICE.csv doesn't exist"))
               } else {timeData <- "Data/RefTimelineVice/ref_timeline_VICE.csv"}
@@ -340,9 +337,9 @@ if(All1 == TRUE || Script2 == TRUE) {
   load(baseData)
   
   #Loop over "i" outbreak areas
-  for(i in 1:numberOutbreakGeographicRegions){
+  for(q in 1:numberOutbreakGeographicRegions){
       
-    outbreak.raw  <- dataOutbreaksFiles[[i]]
+    outbreak.raw  <- dataOutbreaksFiles[[q]]
     outbreak.year <- 2012
   
     #Time series data
@@ -364,21 +361,21 @@ if(All1 == TRUE || Script2 == TRUE) {
       for(j in 1:length(my.gridinfo)){          
          withinCommunity     <- my.gridinfo[[j]]$within_Community  
          neighborCommunities <- na.omit(my.gridinfo[[j]]$neighbors.Communities)
-              ### TEST neighborCommunities  <- c(neighborCommunities, 31550)
+              #neighborCommunities  <- c(neighborCommunities, 31550) #test
          
-         #Loop over "g" number of projects per geographic area
          for(g in 1:length(projects)){
            ####Set = 0      
-           my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]]  <-rep(0,timeLine$week_abs[length(timeLine$week_abs)])
-           my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],"Date",sep="_")]] <-rep(0,timeLine$week_abs[length(timeLine$week_abs)])
+           my.gridinfo[[j]][[paste(namesArea[[q]],projNames[[q]][g],sep="_")]]        <-rep(0,timeLine$week_abs[length(timeLine$week_abs)])
+           my.gridinfo[[j]][[paste(namesArea[[q]],projNames[[q]][g],"Date",sep="_")]] <-rep(0,timeLine$week_abs[length(timeLine$week_abs)])
            #########   
-              temp <- outbreak.raw[which(!is.na(match(outbreak.raw$Community,neighborCommunities)) &outbreak.raw[[projNames[[i]][g]]]>0),]
+              temp <- outbreak.raw[which(!is.na(match(outbreak.raw$Community,neighborCommunities)) & outbreak.raw[[projNames[[q]][g]]]>0),]                
+                 print(intersect(outbreak.raw$Community,neighborCommunities)) #test
            if(length(temp[,1])>0){
              #print(paste(i=i, j=j,g=g))
              #Loop over q areas with outbreaks 
              for(q1 in 1:length(temp[,1])){
-                my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]][temp$absweek[q1]] <- temp[[projNames[[i]][g]]][[q1]]+ my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]][temp$absweek[q1]]                
-                my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],"_Date",sep="")]][temp$absweek[q1]]  <- as.Date(temp$Date[[q1]])
+                my.gridinfo[[j]][[paste(namesArea[[q]],projNames[[q]][g],sep="_")]][temp$absweek[q1]] <- temp[[projNames[[i]][g]]][[q1]]+ my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]][temp$absweek[q1]]                
+                my.gridinfo[[j]][[paste(namesArea[[q]],projNames[[q]][g],"_Date",sep="")]][temp$absweek[q1]]  <- as.Date(temp$Date[[q1]])
                 
              }
            }#end if 
@@ -424,7 +421,8 @@ if(All1 == TRUE || Script3 == TRUE) {
      } else print(paste("Can't find Data/SurveillanceData/", name1, ".csv", sep=""))
    }
 
-  #If vStuff TRUE, save it for next script  
+  #If vStuff TRUE, save it for next script
+    #Value of evidence  V=P(E|H1)/ P(E|H0)
   vStuff        <-  TRUE  
  
   outbreak.IDs  <- namesArea
@@ -514,9 +512,7 @@ if(All1 == TRUE || Script3 == TRUE) {
       if(length(my.return[[1]]) != 0){ 
           eval(parse(text=(paste("all.week.time.series.", projects[[q]], "[[", i, "]] <- ", my.return[[1]], sep=""))))
          }
-       
-      #Gunnar Nov 11 I am not sure exactly what this does. What we really need later is "all week counts". 
-      #my.retyrn[[3]]. (my.return[[2]] would be used IF we wanted amodel using aggreagtion at day level.)
+        
       eval(parse(text=(paste("all.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[2]], sep=""))))
               temp1 <- eval(parse(text=(paste("all.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[2]], sep=""))))
       eval(parse(text=(paste("all.week.counts.", projects[[q]], "[[", i, "]] <- ", my.return[[3]], sep=""))))
@@ -529,15 +525,9 @@ if(All1 == TRUE || Script3 == TRUE) {
 
       gridpop[[i]] <- my.gridinfo[[i]]$animals.in.range    
     } #End loop over project    
-  } #End gridinfo 
-  #in earlier verison you named this "loop p"
-  #In previous version you added:
-  #print("Check:  Many things calculated, but only a few used?")
-  #max end mean values were calculated as a log - to see that the "make time series" function performed correctly
-  # in modelling we use "allcounts" or "all.week.counts" depending on whether we model at weekly ar daily level
-  # may be possible to simplify.
-  
-  #Load surveillance data, we know from above that files exists
+  } #End gridinfo
+   
+  #Load surveillance data, we know from above that files exist
    firsttwoYears <- list(); histCounts <- list(); all.baseline.counts.X <- list() 
    for(j in 1:length(projects)){
       projx <- read.csv(paste("Data/SurveillanceData/SurveillanceData_", projects[[j]],".csv", sep=""), sep=";")
@@ -550,14 +540,6 @@ if(All1 == TRUE || Script3 == TRUE) {
     }
     
   ### prepare model inputs
-  # Gunnar Nov 11.one flaw in the current verison is that we do not make a difference between the
-  #training persiod and the test period
-  # we should define somewhere in the beginning what part of the timeline is "training data"
-  #for the data used in the non-spatial modelleing we should make the global variables
-  # e.g. all.baseline.counts, week.of.year etc columns  of a data.frame "non.spatial.data
-  # then this dataframe should be "split" in a "non spatial train data" and "non spatial test data" part
-  # only the train data should be sent to "make fit".
-  
   histMean.X <- list()  
   for(j in 1:length(histCounts)){  
   #histmean is based on the total data and total population
@@ -592,17 +574,6 @@ if(All1 == TRUE || Script3 == TRUE) {
   }
 
   #Why just for Neuro?
-  #Gunnar Nov 11 we just need to get, somehow, the length of the time-series-vector (length of our timeline)
-  # we could obtain this figure from wherever we define the length of the timeline.
-  
-  #Gunnar Nov 11
-  #the data "all.grid ...." should be columns in a data.frame "all.grid.data" 
-  #before unlisting we should ideally first fick the part of each "grid-specific" vector that corresponds to the training period and test persion, as defined earlier.
-  #alterntively we could make a variable "all grid year". then we could use that to divide the 
-  #all.grid data-frame in train and test data.
-  #Storing the "all.grid data as a table in a data-frame is necessary for some modelling-functions
-  #to work (e.g. mle2 that I am trying out now.)
-  
   all.grid.logpop <- c()  
   for(i in 1:length(my.gridinfo)){  
      all.grid.logpop   <-c(all.grid.logpop,rep(log(gridpop[[i]]),length(eval(parse(text=paste("all.week.counts.", projects[[1]],  sep=""))))))
@@ -627,9 +598,7 @@ if(All1 == TRUE || Script3 == TRUE) {
   }
 
   ###  NOT SOLVING all.grid.seasonal.X is wrong length
-  #Gunnar nov 11 it is "all grid counts" that has the wrong length. All vectors should have a length corresponding to
-  #the number of grid-cells times the number of time units.
-  
+  ### Calculate the expected number of counts at points in time  
   grid.fit.X <- list(); all.grid.exp.mean.X <- list()  
   for(j in 1:length(projects)){
       grid.fit.X[[j]]  <- glm(all.grid.counts.X[[j]]  ~ all.grid.logpop +log(all.grid.seasonal.X[[j]]), family="poisson")
