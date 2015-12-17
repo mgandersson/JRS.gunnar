@@ -340,7 +340,7 @@ if(All1 == TRUE || Script2 == TRUE) {
   for(q in 1:numberOutbreakGeographicRegions){
       
     outbreak.raw  <- dataOutbreaksFiles[[q]]
-    outbreak.year <- 2012
+    outbreak.year <- 2012  # <- user input
   
     #Time series data
     timeLine <- read.table(timeData,sep=";",header=TRUE,allowEscapes = TRUE, fill = TRUE,)  
