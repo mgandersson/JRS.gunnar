@@ -10,6 +10,7 @@ significance of date_decl?  I understand that you need the
 base counts of syndromes, but here we're not recording a
 count, but a date.  Where are the base data actually
 recorded?  
+Reply: Each line represents an event. (one animal with a syndrome). To obtain the vector of counts we count the number of lines within each week and circle (thre circle being represented in "My gridinfo" by a listy of communes.). 
 
 Nov 12th. Should we keep questions and comments in a separate file and
 not in the code itself?  I'm afraid the code will get messy
@@ -24,10 +25,18 @@ The function grid.fit.x is not working, I think because the
       model.X[[j]] <- make.fit(all.baseline.counts.X[[j]], loghistMean.X[[j]], tx, week.of.year, log(totpop),time.unit = "week", distribution="poisson")
   }
 
+Gunnar: note that grid.fix.X is not a function. Just a list of results from the function glm().One result per syndrome
+Note that the lingth of the vectors sent to the above funciton, as well as that sent to glm(U) should equal the number of weeks considered. 
+One problem encountered in the versions I tested before was that the "make.time.series" function (in the loop over my.gridinfo as well as for the vector with all counts) used the wrong format for dates (I do not know when it changed). The result of that was that matching dates of syndromic events in the circles and the dates in the timeline failed. As a downstream result all count-vectors were the count vectors were vectors of just zeros. That in turn results in failure of function grid.fit.x
+So - verify the the transformation from list of dates to vectors of weekly counts actually works before proceed ing with model fitting.
+Some of the redundant variables (names like mean count and max count) created in the loop over my.gridinfo serves the sole purpose of checking that at lest in some grid cells non-zero week counts are recordet (and that some are above one).
+
+Note that "all.grid.counts.X (as all "all.grid... variuables) have a length corresponding to the product of the time series length (in weeks) and the number of grid cells.
+
 ###  NOT SOLVING all.grid.seasonal.X is wrong length
   grid.fit.X <- list(); all.grid.exp.mean.X <- list()  
   for(j in 1:length(projects)){
       grid.fit.X[[j]]  <- glm(all.grid.counts.X[[j]]  ~ all.grid.logpop +log(all.grid.seasonal.X[[j]]), family="poisson")
       all.grid.exp.mean.X[[j]] <- predict.glm(grid.fit.X[[j]] ,type="response", se.fit=TRUE,newdata=as.data.frame(all.grid.seasonal.X[[j]]))
   }
-  
+  I thinbk I fixed this is..
