@@ -243,60 +243,83 @@ my.out.params.from.pop = function (pop=1256){ #for Geom
   return(cbind(presp,pneur))
 }
 
-my.calculate.v =function(i,nmax,outbreak.ID="none"){ #nmax=upper limit Ncases
+my.calculate.v =function(i,nmax,outbreak.ID="none"){ 
+  #nmax=upper limit Ncases
   #get data gor gridpoint
   tempout.X   <- list()  
-  tempcount.X <- list()  
+  tempcounts.X <- list()  
   for(j in 1:length(all.grid.counts.X)){
     tempcounts.X[[j]] <- all.grid.counts.X[[j]][which(all.grid.gridindex == i)]
     if(!outbreak.ID=="none"){
     #tempout.neur <- eval(parse(text=paste("my.gridinfo[[i]]$",outbreak.ID,"_neuro_counts",sep="")))
     #tempout.resp <- eval(parse(text=paste("my.gridinfo[[i]]$",outbreak.ID,"_respiratory_counts",sep="")))
-    tempout.X[[j]] <- eval(parse(text=paste(paste("my.gridinfo[[i]]",outbreak.ID,"_decl_",projects[[j]],sep=""))))
+    tempout.X[[j]] <- eval(parse(text=paste(paste("my.gridinfo[[i]]$",outbreak.ID,"_decl_",projects[[j]],sep=""))))
+    tempcounts.X[[j]] <-tempcounts.X[[j]]+tempout.X[[j]]
+    
     }
    }
   
-  tempcounts.X[[j]] <-tempcounts.X[[j]]+tempout.X[[j]]
 
-  temp.p.X <- list(); temp.nonzero.X <- list(); p.base.X <-list()
+  temp.p.X <- list(); temp.nonzero.X <- list(); p.base.X <-list();v.i.X<-list()
   for(j in 1:length(all.grid.counts.X)){
     temp.p.X[[j]] <- all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)]
-    temp.nonzero.X[[j]] <- all.grid.geom.nonzero[[X]][which(all.grid.gridindex == i)]
+    temp.nonzero.X[[j]] <- all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)]
     p.base.X[[j]] <-  zero.trunk.geom(tempcounts.X[[j]],temp.p.X[[j]],temp.nonzero.X[[j]])
    }
 
   for(j in 1:length(all.grid.counts.X)){
-   eval(parse(text = paste(paste("v.", projects[[j]],".i",sep=""), "<- c()")))
-      tmp1[[j]] <- eval(parse(text = paste(paste("v.", projects[[j]],".i",sep=""), "<- c()")))
+   #temp.p.X[[j]] <- c()
+  eval(parse(text = paste(paste("v.", projects[[j]],sep="") ,"<- c()")  ))
    v.tot.i <- c()
   #estimate V for each week in grid i
     nmaxr.X <- list(); probs.ij.X <-list()
     for(q in 1:length(tx)){
       nmaxr.X[[j]] <- min(nmax,max(tempcounts.X[[j]]))+2      
       if(outbreaktype == "Negbinom"){
-        probs.ij.X[[j]] <-prob.out.TG.NB(tempcounts.X[[j]][q],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)][q],all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)][q],outbreak.mean.X[[j]],outbreak.theta.X[[j]],full=FALSE,nmax=nmaxr)
+        probs.ij.X[[j]] <-prob.out.TG.NB(tempcounts.X[[j]][q],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)][q],all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)][q],outbreak.mean.X[[j]],outbreak.theta.X[[j]],full=FALSE,nmax=nmaxr.X[[j]])
       }
     
       if(outbreaktype == "Geom.from.pop"){
         #prob.out.TG.Geom<- function(n,base.p, base.nonzero,out.p,full=FALSE,nmax=40){
-        probs.ij.X[[j]] <- prob.out.TG.Geom(tempcounts.X[[j]][q],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)][q],all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)][q],my.gridinfo[[i]][["out.geom.p"]][1],full=FALSE,nmax=nmaxr)
+        probs.ij.X[[j]] <- prob.out.TG.Geom(tempcounts.X[[j]][q],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)][q],all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)][q],my.gridinfo[[i]][["out.geom.p"]][1],full=FALSE,nmax=nmaxr.X[[j]])
       }
     
-      tmp1[[j]][q]  <- probs.ij.X[[j]][3]/probs.ij.X[[j]][1]
+      temp.p.X[[j]][q]  <- probs.ij.X[[j]][3]/probs.ij.X[[j]][1]
     }
-       
-    v.tot.i <- sum(tmp1[[j]][q])
+     
+    #v.i.X[[j]] <- sum(temp.p.X[[j]])
   }
 
   mylist<-list()
   for(j in 1:length(all.grid.counts.X)){
-    mylist[[paste("v.", projects[[j]], sep="")]]<- log10(tmp1[[j]])
+    mylist[[paste("v.", projects[[j]], sep="")]]<- log10(temp.p.X[[j]])
   }
   
-  v.tot.i <- sum(mylist)
-  mylist[["v.tot"]]<- log10(v.tot.i)
+  mylist[["v.tot"]] <- rowSums(matrix(unlist(mylist),length(mylist[[1]])))
+ 
   
   return(mylist)
 }
 
 trunk.mean <-function(p){return(1/p)} #http://en.wikipedia.org/wiki/Geometric_distribution
+
+####################               cumulative p.prior                                         ###################################
+# function calculates a prior probability for presence of disease based on the prior probability of introduction and transmission.
+###################################################################################################################################
+p.prior.cumul = function(p.trans,p.intro){
+  #intro and trans are vectors of probabilities
+  #p.intro <- c(0.1,0.1,0.1,0.1,0.1,0.1)
+  #p.trans <- c(0.1,0.1,0.1,0.1,0.1,0.1)
+  p.trans<- 10^p.trans
+  p.intro<-  10^p.intro
+  
+  temp.t.3 <- colMeans(rbind(  p.trans,c(0,p.trans[-length(p.trans)]),c(c(0,0),p.trans[-c(length(p.trans)-1,length(p.trans))]),c(c(0,0,0),p.trans[-c(length(p.trans)-2,length(p.trans)-1,length(p.trans))])   ))
+  temp.t.2 <-colMeans(rbind(  p.trans,c(0,p.trans[-length(p.trans)]),c(c(0,0),p.trans[-c(length(p.trans)-1,length(p.trans))])   ))
+  temp.t.1<- colMeans(rbind(  p.trans,c(0,p.trans[-length(p.trans)])   ))
+  
+  p.cumul <- (c(c(0,0,0),p.intro[-c(length(p.trans)-2,length(p.trans)-1,length(p.trans))])*temp.t.3 
+              + c(c(0,0),p.intro[-c(length(p.trans)-1,length(p.trans))])*temp.t.2 
+              +c(c(0),p.intro[-c(length(p.trans))])*temp.t.1
+              + p.trans*p.intro)
+  return(log10(p.cumul))
+}
