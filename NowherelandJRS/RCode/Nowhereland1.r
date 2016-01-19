@@ -907,14 +907,14 @@ if(All1 == TRUE || Script4 == TRUE) {
   
   for(i in 1:length(my.gridinfo)){
     #i<-870  #860 has peaks 870 is Aquitaine, 140 has Normandie, 138, 139 has random peaks
-    loghost.p <-eval(parse(text=paste("my.gridinfo[[",i,"]]$",variables[2],sep="")))#Hrel50
-    logvector.p <-eval(parse(text=paste("my.gridinfo[[",i,"]]$",variables[8],sep="")))#Vrel50
+    loghost.p <-eval(parse(text=paste("my.gridinfo[[",i,"]]$",variables[2],sep="")))  #Hrel50
+    logvector.p <-eval(parse(text=paste("my.gridinfo[[",i,"]]$",variables[8],sep="")))  #Vrel50
     p.prior.intro <- 10^loghost.p + 10^logvector.p -((10^loghost.p)*(10^logvector.p))
     my.gridinfo[[i]]$Intro.risk.base <- log10(p.prior.intro/(1-p.prior.intro))#"log odds"
     
       my.gridinfo[[i]]$Intro.risk.outbreak <- log10(p.prior.intro/(1-p.prior.intro))#"log odds"  
-      my.gridinfo[[i]]$prior.base <-  p.prior.cumul( my.gridinfo[[i]]$ptrans50 ,  my.gridinfo[[i]]$Intro.risk.base )
-      my.gridinfo[[i]]$prior.out <- p.prior.cumul( my.gridinfo[[i]]$ptrans50 , my.gridinfo[[i]]$Intro.risk.outbreak )
+      my.gridinfo[[i]]$prior.base <-  p.prior.cumul( my.gridinfo[[i]]$ptrans50 ,  my.gridinfo[[i]]$Intro.risk.base ) 
+      my.gridinfo[[i]]$prior.out <- p.prior.cumul( my.gridinfo[[i]]$ptrans50 , my.gridinfo[[i]]$Intro.risk.outbreak ) 
       my.gridinfo[[i]]$JRS.out.High <-  my.gridinfo[[i]]$prior.out  + my.gridinfo[[i]]$Syndrome1_outbreakArea_A1_vtot ## Temporary hardcoded- should account for more scenarios
        my.gridinfo[[i]]$JRS.out.Base <- my.gridinfo[[i]]$prior.base + my.gridinfo[[i]]$v.tot
       
