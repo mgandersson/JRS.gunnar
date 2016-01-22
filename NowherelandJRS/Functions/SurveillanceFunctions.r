@@ -233,17 +233,30 @@ prob.out.TG.Geom<- function(n,base.p, base.nonzero,out.p,full=FALSE,nmax=40){
 }
 ##
 
+#### old hardcoded
+#my.out.params.from.pop = function (pop=1256){ #for Geom
+#  my.clin <- pop*0.8*0.125*0.4
+#  my.resp <- my.clin*0.9*0.25
+#  my.neur <- my.clin*0.1*0.5
+#  presp <-1/(my.resp+1)
+#  pneur <-1/(my.neur+1)
+#  return(cbind(presp,pneur))
+#}
 ####
-my.out.params.from.pop = function (pop=1256){ #for Geom
-  my.clin <- pop*0.8*0.125*0.4
-  my.resp <- my.clin*0.9*0.25
-  my.neur <- my.clin*0.1*0.5
-  presp <-1/(my.resp+1)
-  pneur <-1/(my.neur+1)
-  return(cbind(presp,pneur))
+my.out.params.from.pop = function (mynames=c(resp,neur),affected,perweek,clinical,showsign,reported,pop=1256){ #for Geom
+  my.clin <- pop*affected*perweek*clinical
+  my.p <- c()
+  for(i in 1:length(mynames)){
+  my.sign <- my.clin*showsign[i]*reported[i]
+  my.p[i] <-1/(my.sign+1)
+  }
+  my.p<- as.data.frame(t(my.p))
+  names(my.p)<-mynames
+  return(my.p)
 }
-
+#my.out.params.from.pop(mynames=c("s1","s2"),affected=0.8,perweek=0.125,clinical=0.4,showsign=c(0.9,0.1),reported=c(0.25,0.5))
 my.calculate.v =function(i,nmax,outbreak.ID="none"){ 
+  #outbreak.ID="Syndrome1_outbreakArea_A1"
   #nmax=upper limit Ncases
   #get data gor gridpoint
   tempout.X   <- list()  
@@ -253,7 +266,8 @@ my.calculate.v =function(i,nmax,outbreak.ID="none"){
     if(!outbreak.ID=="none"){
     #tempout.neur <- eval(parse(text=paste("my.gridinfo[[i]]$",outbreak.ID,"_neuro_counts",sep="")))
     #tempout.resp <- eval(parse(text=paste("my.gridinfo[[i]]$",outbreak.ID,"_respiratory_counts",sep="")))
-    tempout.X[[j]] <- eval(parse(text=paste(paste("my.gridinfo[[i]]$",outbreak.ID,"_decl_",projects[[j]],sep=""))))
+    #tempout.X[[j]] <- eval(parse(text=paste(paste("my.gridinfo[[i]]$",outbreak.ID,"_decl_",projects[[j]],sep=""))))
+    tempout.X[[j]] <- eval(parse(text=paste("my.gridinfo[[i]]$",outbreak.ID,sep="")))
     tempcounts.X[[j]] <-tempcounts.X[[j]]+tempout.X[[j]]
     
     }
@@ -281,7 +295,9 @@ my.calculate.v =function(i,nmax,outbreak.ID="none"){
     
       if(outbreaktype == "Geom.from.pop"){
         #prob.out.TG.Geom<- function(n,base.p, base.nonzero,out.p,full=FALSE,nmax=40){
-        probs.ij.X[[j]] <- prob.out.TG.Geom(tempcounts.X[[j]][q],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)][q],all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)][q],my.gridinfo[[i]][["out.geom.p"]][1],full=FALSE,nmax=nmaxr.X[[j]])
+        probs.ij.X[[j]] <- prob.out.TG.Geom(tempcounts.X[[j]][q],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)][q],
+                                            all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)][q],my.gridinfo[[i]][["out.geom.p"]][[projects[[j]]]],
+                                            full=FALSE,nmax=nmaxr.X[[j]])
       }
     
       temp.p.X[[j]][q]  <- probs.ij.X[[j]][3]/probs.ij.X[[j]][1]

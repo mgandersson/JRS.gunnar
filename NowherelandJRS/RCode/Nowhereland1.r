@@ -59,7 +59,7 @@ if('try-error' %in% class(x.try5))
   #User enters name of projects, names must be consistent with other files  
   projects        = list()
     projects[[1]]   = "Syndrome1"        #User input
-    #projects[[2]]   = "Respiratory"  #User input
+    projects[[2]]   = "Syndrome2"  #User input
      
   #For each project make sure file exists and is properly named
   projectsCountData    =  list()  
@@ -331,34 +331,45 @@ if(All1 == TRUE || Script2 == TRUE) {
     if(All1 == TRUE)  print("Running all four scripts, in Script 2") else print("Running ONLY script two")        
   
   dataOutbreaks <-  "Data/Outbreaks/"
-  outbreakfilename <- "Syndrome1_outbreakArea_A"
-  
-  #Names of outbreak file(s):
+  outbreakfilename <- c()# really the number of syndromes
+  outbreakfilename[1] <- "Syndrome1_outbreakArea_A"
+  outbreakfilename[2] <- "Syndrome2_outbreakArea_A"
+    #Names of outbreak file(s):
   numberOutbreakGeographicRegions <- 1  #User input
+  numberofSyndroms <- length(projects)
   namesArea <- list()  
   for(i in 1:numberOutbreakGeographicRegions){
-      name1 <- paste(outbreakfilename, i, sep="")
-      if(file.exists(paste(dataOutbreaks, name1, ".csv", sep="")) == TRUE){
-        print(paste("File", paste(dataOutbreaks, name1, ".csv", sep="")," found", sep=""))
-        namesArea[[i]] <- name1
-        }else print(paste("File ", name1, " not found in file Data/Outbreaks/", sep=""))
-   }    
-        
-  #Check if syndroms/projects from above in both files
-  numberofSyndroms      <- projects
-  dataOutbreaksFiles    <- list(); projNames <- list()  
-  for(i in 1:numberOutbreakGeographicRegions){
-      name1 <- paste(outbreakfilename, i, sep="")
-      x.try4 <- read.table(paste(paste(dataOutbreaks, name1, ".csv", sep="")), sep=";", header=T)
-      if('try-error' %in% class(x.try4))
-             {print(paste("Can't open", paste(dataOutbreaks, name1, ".csv", sep="")), sep="")
-        } else {
-                dataOutbreaksFiles[[i]]  <- read.table(paste(paste(dataOutbreaks, name1, ".csv", sep="")), sep=";", header=T)
-                checknames <- names( dataOutbreaksFiles[[i]])
-                projNames[[i]]  <- paste("decl_", projects, sep="")
-                if(all(as.character(unlist(projNames[[i]])) %in% checknames) == FALSE) {print(paste("Not all syndroms in file ", paste(dataOutbreaks, name1, ".csv", sep="")))}
-          }
+    namesArea[[i]] <-list()
+    for(j in 1:length(outbreakfilename)){
+    name1 <- paste(outbreakfilename[j], i, sep="")
+    if(file.exists(paste(dataOutbreaks, name1, ".csv", sep="")) == TRUE){
+      print(paste("File", paste(dataOutbreaks, name1, ".csv", sep="")," found", sep=""))
+      namesArea[[i]][[j]] <- name1
+    }else print(paste("File ", name1, " not found in file Data/Outbreaks/", sep=""))
+  }  
+  }
+  
+ 
+ # Check if syndroms/projects from above in both files
+ numberofSyndroms      <- projects
+ dataOutbreaksFiles    <- list(); projNames <- list()  
+ for(i in 1:numberOutbreakGeographicRegions){
+   dataOutbreaksFiles[[i]] <-list()
+   projNames[[i]] <-list()
+   for(j in 1:length(outbreakfilename)){
+     name1 <- paste(outbreakfilename[j], i, sep="")
+    x.try4 <- read.table(paste(paste(dataOutbreaks, name1, ".csv", sep="")), sep=";", header=T)
+    if('try-error' %in% class(x.try4))
+    {print(paste("Can't open", paste(dataOutbreaks, name1, ".csv", sep="")), sep="")
+    } else {
+      dataOutbreaksFiles[[i]][[j]]  <- read.table(paste(paste(dataOutbreaks, name1, ".csv", sep="")), sep=";", header=T)
+      checknames <- names( dataOutbreaksFiles[[i]][[j]])
+      projNames[[i]][[j]]  <- paste("decl_", projects[[j]],"outbreakAreaA",i, sep="")
+      #now only one Syndrome per file. no need to check
+      #if(all(as.character(unlist(projNames[[i]][[j]])) %in% checknames) == FALSE) {print(paste("Not all syndroms in file ", paste(dataOutbreaks, name1, ".csv", sep="")))}
+    }
    }
+  }#end projects
   
   #Input from previous script is input for this script 
   baseData  <- paste("FilenameGridInfoCount", shapeFileLayer, "_Script1", sep="")
@@ -380,8 +391,9 @@ if(All1 == TRUE || Script2 == TRUE) {
   
   #Loop over "i" outbreak areas
   for(i in 1:numberOutbreakGeographicRegions){
-      
-    outbreak.raw  <- dataOutbreaksFiles[[i]]
+    #looping over data for different syndromes
+    for(g in 1:length(projects)){ 
+    outbreak.raw  <- dataOutbreaksFiles[[i]][[g]]
     outbreak.year <- 2012
   
     #Time series data
@@ -406,23 +418,25 @@ if(All1 == TRUE || Script2 == TRUE) {
               ### TEST neighborCommunities  <- c(neighborCommunities, 31550)
          
          #Loop over "g" number of projects per geographic area
-         for(g in 1:length(projects)){
+        # for(g in 1:length(projects)){
            ####Set = 0      
-           my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]]  <-rep(0,timeline$week_abs[length(timeline$week_abs)])
+           my.gridinfo[[j]][[ namesArea[[i]][[g]] ]]  <-rep(0,timeline$week_abs[length(timeline$week_abs)])
           # my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],"Date",sep="_")]] <-rep(0,timeline$week_abs[length(timeline$week_abs)])
+          # temp <- outbreak.raw[which(!is.na(match(outbreak.raw$Community,neighborCommunities)) &outbreak.raw[[projNames[[i]]>0),]
+        temp <- outbreak.raw[which(!is.na(match(outbreak.raw$Community,neighborCommunities))),]
            #########   
-              temp <- outbreak.raw[which(!is.na(match(outbreak.raw$Community,neighborCommunities)) &outbreak.raw[[projNames[[i]][g]]]>0),]
+              #temp <- outbreak.raw[which(!is.na(match(outbreak.raw$Community,neighborCommunities)) &outbreak.raw[[projNames[[i]][g]>0),]
            if(length(temp[,1])>0){
              #print(paste(i=i, j=j,g=g))
              #Loop over q areas with outbreaks 
              for(q1 in 1:length(temp[,1])){
-                my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]][temp$absweek[q1]] <- temp[[projNames[[i]][g]]][[q1]]+ my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],sep="_")]][temp$absweek[q1]]                
+               my.gridinfo[[j]][[ namesArea[[i]][[g]] ]][temp$absweek[q1]] <- temp[q1,3]+  my.gridinfo[[j]][[ namesArea[[i]][[g]] ]][temp$absweek[q1]]                
                # my.gridinfo[[j]][[paste(namesArea[[i]],projNames[[i]][g],"_Date",sep="")]][temp$absweek[q1]]  <- as.Date(temp$Date[[q1]])
                 
              }
            }#end if 
-         }#end syndroms  
-       }#end grids
+         }#end grids  
+       }#end syndromes
     }#end outbreak areas
   
   
@@ -478,9 +492,17 @@ if(All1 == TRUE || Script3 == TRUE) {
   if(file.exists("Data/SurveillanceData/NegbinomParameters.csv") == TRUE){
        par1 <- read.csv("Data/SurveillanceData/NegbinomParameters.csv", header=T, sep=";")
      } else {print("File: Data/SurveillanceData/NegbinomParameters.csv not found")}
-    
+  
   if(!(any(projects %in% par1$Syndrom)) == TRUE) print(paste("Project", projects, "data not found."))
 
+  #Read in Geometrical  Parameters for outbreak
+  if(file.exists("Data/SurveillanceData/GeomOutbreakParameters.csv") == TRUE){
+    par2 <- read.csv("Data/SurveillanceData/GeomOutbreakParameters.csv", header=T, sep=";")
+  } else {print("File: Data/SurveillanceData/GeomOutbreakParameters.csv not found")}
+  
+  if(!(any(projects %in% par2$Syndrom)) == TRUE) print(paste("Project", projects, "data not found."))
+  
+  
   for(i in 1:length(projects)){      
        binomOutbreakData <- subset(par1, par1$Syndrom == projects[[i]])
          name1  <- paste("outbreak.mean.", projects[[i]], sep="")
@@ -532,6 +554,7 @@ if(All1 == TRUE || Script3 == TRUE) {
     
   ##### Multiple loops
   #Loop over grids  
+  
   for(i in 1:length(my.gridinfo)){
     #Short loop over projects 
     #No longer needed when time series are formed in script 1...
@@ -542,8 +565,15 @@ if(All1 == TRUE || Script3 == TRUE) {
     #  delayedAssign(name2[[j]], NA)
     #}  
 
-    my.gridinfo[[i]][["out.geom.p"]] <- my.out.params.from.pop(my.gridinfo[[i]][["animals.in.range"]])
-
+   # my.gridinfo[[i]][["out.geom.p"]] <- my.out.params.from.pop(my.gridinfo[[i]][["animals.in.range"]])
+    my.gridinfo[[i]][["out.geom.p"]] <- my.out.params.from.pop(mynames=as.character(unique(par2$Syndrom))[-1],
+                           affected=par2$Data[which(par2$Variable=="affected")],
+                           perweek=par2$Data[which(par2$Variable=="perweek")],
+                           clinical=par2$Data[which(par2$Variable=="clinical")],
+                           showsign=par2$Data[which(par2$Variable=="showsign")],
+                           reported=par2$Data[which(par2$Variable=="reported")],
+                           pop=my.gridinfo[[i]][["animals.in.range"]])
+    
     #Short loop over projects
     for(q in 1:length(projects)){
        # varName1 <- paste("base", projects[[q]], "Counts", sep="")    
@@ -570,9 +600,8 @@ if(All1 == TRUE || Script3 == TRUE) {
       #eval(parse(text=(paste("meanweekcounts.", projects[[q]], "[[", i, "]] <- ", max(temp2), sep=""))))          
     }
       gridpop[[i]] <- my.gridinfo[[i]]$animals.in.range    
-    }
-   #End gridinfo Loop p
-    print("Check:  Many things calculated, but only a few used?")
+    } #End gridinfo Loop p
+    #print("Check:  Many things calculated, but only a few used?") GA rremoved unnecessary stuff
 
   #Load surveillance data, we know from above that files exists
    firsttwoYears <- list(); histCounts <- list(); all.baseline.counts.X <- list() 
@@ -692,23 +721,36 @@ if(All1 == TRUE || Script3 == TRUE) {
      geom.param.for.trunk.X[[j]]  <- trunk.mean(geom.param.for.trunk.X[[j]])
      all.grid.geom.mean.X[[j]]    <- trunk.mean(all.grid.geom.param.X[[j]])
      all.grid.geom.nonzero.X[[j]] <- all.grid.exp.mean.X[[j]]/all.grid.geom.mean.X[[j]]
-
+}
     #insert in my gridinfo
+    #redo so that params from all syndromes end up in a vector
     for( i in 1:length(my.gridinfo)){
+      base.geom.p <- list()
+      base.nonzero <-list()
         for(j in 1:length(projects)){
-           name1 <- paste(projects[[j]], ".geom.p", sep="")
-           name2 <- paste(projects[[j]], ".nonzero", sep="")
-           my.gridinfo[[i]][[name1]]  <- all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)]
-           my.gridinfo[[i]][[name2]]  <- all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)]
+           #name1 <- paste(projects[[j]], ".geom.p", sep="")
+           #name2 <- paste(projects[[j]], ".nonzero", sep="")
+           #my.gridinfo[[i]][[name1]]  <- all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)]
+           #my.gridinfo[[i]][[name2]]  <- all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)]
+        # base.geom.p[[projects[j]]]  <- c(base.geom.p[[j]],all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)])
+        #  base.nonzero[[projects[j]]] <-c(base.nonzero,all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)])
+           base.geom.p[[as.character(projects[j])]]  <- c(all.grid.geom.param.X[[j]][which(all.grid.gridindex == i)])
+            base.nonzero[[as.character(projects[j])]] <-c(all.grid.geom.nonzero.X[[j]][which(all.grid.gridindex == i)])
          } 
+     # base.geom.p <- as.data.frame( base.geom.p)
+     # base.nonzero <-as.data.frame(base.nonzero)
+     # names(base.geom.p) <- projects
+     # names(nonzero) <- projects
+      my.gridinfo[[i]][["base.geom.p"]] <-base.geom.p
+      my.gridinfo[[i]][["base.nonzero"]] <-base.geom.p
      }
-  }
+ # }
   #################################################
   ############# make plots for geom distributions
   #################################################
 diagnostic.plots <- FALSE
 if(diagnostic.plots==TRUE){
-  j<-1
+  j<-2
 plot(c(),c(),xlim=c(0,0.15),ylim=c(0,2),xlab="grid mean",ylab="")
 points(all.grid.exp.mean.X[[j]],all.grid.geom.mean.X[[j]],pch=".")
 mtext("mean of trunk geom",side=2,padj=-3)
@@ -728,7 +770,7 @@ plot(all.grid.seasonal.X[[j]],all.grid.geom.nonzero.X[[j]]*all.grid.geom.mean.X[
   
   ## #calculate.v <- FALSE#  #"base", "outbreak.ID"
   ##### This is slow
-  v.to.make <- c(outbreak.IDs,"base")
+  v.to.make <- c(unlist(outbreak.IDs),"base")
   
   if(vStuff == TRUE){
    for(i2 in 1:length(v.to.make)){

@@ -1,0 +1,8 @@
+Syndrom;Variable;Data
+NA;affected;0.8
+NA;perweek;0.125
+NA;clinical;0.4
+Syndrome1;showsign;0.9
+Syndrome1;reported;0.25
+Syndrome2;showsign;0.1
+Syndrome2;reported;0.5
